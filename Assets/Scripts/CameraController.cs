@@ -1,21 +1,65 @@
+using System.Collections;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class CameraController : MonoBehaviour
 {
-    //kamera goruntusunu gosteren UI elemaný
     public RawImage display;
-    //kamera goruntusunu tutan nesne
-    private WebCamTexture webcamTexture;
-    private bool cameraStarted;
     public TextMeshProUGUI resolutionText;
+    public TextMeshProUGUI resolutionsText;
     public TextMeshProUGUI fpsText;
     private string resolutions;
+    private bool cameraStarted;
+    private WebCamTexture webcamTexture;
+    public Material hueSatMat;
+    private Texture2D texture;
 
-    private void Update()
+
+    public IEnumerator play()
     {
-        fpsText.text = "FPS: " + (int)(1f / Time.deltaTime);
+        yield return new WaitForSeconds(2.0f);
+
+        //webcamTexture.Play();
+    }
+
+    private void Start()
+    {
+        
+    }
+    public void StartCamera_640_back()
+    {
+        if (cameraStarted)
+            return;
+        else cameraStarted = true;
+        
+
+        //int inputWidth = int.Parse(inputFieldWidth.text);
+       // int inputHeight = int.Parse(inputFieldHeight.text);
+
+
+
+        WebCamDevice[] devices = WebCamTexture.devices;
+        WebCamDevice selectedDevice = devices[0];
+        
+        //if (inputFieldWidth.text == null || inputFieldHeight.text == null)
+        //{
+        //    resolutionText.text = "resolution girilmedi!!!";
+        //    return;
+        //}
+        webcamTexture = new WebCamTexture(selectedDevice.name);
+
+        display.texture = webcamTexture;
+
+
+        //Coroutine coroutine = StartCoroutine(play());
+
+        webcamTexture.Play();
+        resolutionText.text = "Current Resolution: " + webcamTexture.width + "x" + webcamTexture.height;
+
+
+
     }
     public void StartCamera()
     {
@@ -34,18 +78,22 @@ public class CameraController : MonoBehaviour
         //secilen kamerayi tutacak degisken
         WebCamDevice selectedDevice = devices[0];
 
+        int cozunurluk = 480 * 640;
+
         int minDistance = int.MaxValue;
+        
         //tum kameralarý dondurme
         for (int i = 0; i < devices.Length; i++)
         {
             WebCamDevice device = devices[i];
             for (int j = 0; j < device.availableResolutions.Length; j++)
             {
-                //kameralarin destekledigi cozunurlukleri Vector2Int'e donustur
-                Vector2Int resolution = new Vector2Int(device.availableResolutions[j].width, device.availableResolutions[j].height);
+                
+                int resolution = device.availableResolutions[j].width * device.availableResolutions[j].height;
 
                 //640x480 ile olan mesafeyi hesapla
-                int distance = (resolution - new Vector2Int(640, 480)).sqrMagnitude;
+                int distance = Mathf.Abs(cozunurluk - resolution);
+                
                 //mevcut kameranin 640x480'e olan mesafesi en kucuk olani kaydet
                 if (distance < minDistance)
                 {
@@ -55,6 +103,7 @@ public class CameraController : MonoBehaviour
             }
         }
 
+        
 
         int selectedResolutionIndex = 0;
         WebCamTexture webcamTexture = null;
@@ -82,17 +131,21 @@ public class CameraController : MonoBehaviour
             resolutions = "640x480 res destekleyen kamera bulunamadi.";
             return;
         }
-        
+
         //UI elemanina atama
         display.texture = webcamTexture;
-        
+
         //kamera calistirma
         webcamTexture.Play();
 
-        
+
         resolutions = "Current Resolution: " + webcamTexture.width + "x" + webcamTexture.height;
         resolutionText.text = resolutions;
-
     }
     
+    
+    private void Update()
+    {
+        fpsText.text = "FPS: " + (int)(1f / Time.deltaTime);
+    }
 }

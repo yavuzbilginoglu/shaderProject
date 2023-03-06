@@ -63,7 +63,7 @@ public class CameraSwitch : MonoBehaviour
         for (int i = 0; i < devices.Length; i++)
         {
             var device = devices[i];
-            if (isFrontFacing && device.isFrontFacing || !isFrontFacing && !device.isFrontFacing)
+            if ((isFrontFacing && device.isFrontFacing) || (!isFrontFacing && !device.isFrontFacing))
             {
                 selectedDevice = device;
                 break;
