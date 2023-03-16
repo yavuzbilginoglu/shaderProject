@@ -13,7 +13,6 @@ public class CameraController : MonoBehaviour
     private string resolutions;
     private bool cameraStarted;
     private WebCamTexture webcamTexture;
-    public Material hueSatMat;
     private Texture2D texture;
 
 
@@ -137,7 +136,6 @@ public class CameraController : MonoBehaviour
 
         //kamera calistirma
         webcamTexture.Play();
-
 
         resolutions = "Current Resolution: " + webcamTexture.width + "x" + webcamTexture.height;
         resolutionText.text = resolutions;

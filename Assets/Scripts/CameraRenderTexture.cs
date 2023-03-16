@@ -22,8 +22,8 @@ public class CameraRenderTexture : MonoBehaviour
         camTexture.Play();
 
         // RenderTexture nesnesini shaderda kullanmak icin material olusturma
-        Material material = new Material(Shader.Find("Custom/HueSaturation"));
-        material.SetTexture("_MainTex", camTexture);
+        Material material = new Material(Shader.Find("Custom/SelectedCplor"));
+        material.SetTexture("uv_MainTex", camTexture);
         
         GetComponent<Renderer>().material = material;
     }

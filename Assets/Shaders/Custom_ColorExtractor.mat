@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom_HueSaturation
-  m_Shader: {fileID: 4800000, guid: 2b4eff9e25e71f04cbe284f49d14b10e, type: 3}
+  m_Name: Custom_ColorExtractor
+  m_Shader: {fileID: 4800000, guid: 6eb3e91b0a41d2d408e3c3c1463be7cc, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -22,16 +22,18 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 8400000, guid: 0fdd5ec81aac35949a9136ad5044cb78, type: 2}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+    m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Hue: -180
+    - _Desaturate: 0
     - _Invert: 0
-    - _Saturation: 0
-    - _Sign: 0
-    m_Colors: []
+    - _MapAlpha: 0
+    - _MatchMode: 0
+    - _Mixval: 0.5
+    - _Size: 3
+    - _Smoothness: 0
+    - _Tolerance: 1
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _NewColor: {r: 0, g: 1, b: 0, a: 1}
   m_BuildTextureStacks: []

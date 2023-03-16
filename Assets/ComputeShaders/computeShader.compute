@@ -1,0 +1,20 @@
+#pragma kernel ChangeGreen
+#pragma kernel ChangeRed
+
+RWTexture2D<float4> _ResultTex;
+
+[numthreads(8, 8, 1)]
+void ChangeGreen(uint3 id : SV_DispatchThreadID)
+{
+    float4 color = _ResultTex[id.xy];
+    color.g = 0;
+    _ResultTex[id.xy] = color;
+}
+
+[numthreads(8, 8, 1)]
+void ChangeRed(uint3 id : SV_DispatchThreadID)
+{
+    float4 color = _ResultTex[id.xy];
+    color.r = 0;
+    _ResultTex[id.xy] = color;
+}
