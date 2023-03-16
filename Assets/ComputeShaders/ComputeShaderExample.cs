@@ -9,32 +9,40 @@ public class ComputeShaderExample : MonoBehaviour
     public ComputeShader shader;
     public RawImage rawImage;
 
-    private RenderTexture renderTexture;
+    private RenderTexture renderTextureKernel1;
+    private RenderTexture renderTextureKernel2;
+    public int width = 512;
+    public int height = 512;
+    public Texture2D sourceTexture;
 
     private void Start()
     {
-        string imagePath = "Assets/Textures/rawImage.jpg";
 
-        Texture2D sourceTexture = new Texture2D(2, 2);
-        byte[] imageData = File.ReadAllBytes(imagePath);
-        sourceTexture.LoadImage(imageData);
+        int kernel1 = shader.FindKernel("ChangeGreen");
+        int kernel2 = shader.FindKernel("ChangeRed");
 
-        int kernel2 = shader.FindKernel("ChangeGreen");
-        int kernel3 = shader.FindKernel("ChangeRed");
+        renderTextureKernel1 = new RenderTexture(width, height, 0);
+        renderTextureKernel1.enableRandomWrite = true;
+        renderTextureKernel1.Create();
 
-        renderTexture = new RenderTexture(sourceTexture.width, sourceTexture.height, 0);
-        renderTexture.enableRandomWrite = true;
-        renderTexture.Create();
+        renderTextureKernel2 = new RenderTexture(width, height, 0);
+        renderTextureKernel2.enableRandomWrite = true;
+        renderTextureKernel2.Create();
 
-        RenderTexture.active = renderTexture;
-        Graphics.Blit(sourceTexture, renderTexture);
+        //RenderTexture.active = renderTextureKernel1;
 
-        shader.SetTexture(kernel2, "_ResultTex", renderTexture);
-        shader.Dispatch(kernel2, 512 / 8, 512 / 8, 1);
+        //Graphics.Blit(sourceTexture, renderTextureKernel1);
 
-        shader.SetTexture(kernel3, "_ResultTex", renderTexture);
-        shader.Dispatch(kernel3, 512 / 8, 512 / 8, 1);
-        rawImage.texture = renderTexture;
+        shader.SetTexture(kernel1, "SourceTex", sourceTexture);
+        shader.SetTexture(kernel1, "_ResultTex", renderTextureKernel1);
+        shader.Dispatch(kernel1, width / 8, height / 8, 1);
+
+
+        shader.SetTexture(kernel2, "SourceTex", renderTextureKernel1);
+        shader.SetTexture(kernel2, "_ResultTex", renderTextureKernel2);
+        shader.Dispatch(kernel2, width / 8, height / 8, 1);
+        
+        rawImage.texture = renderTextureKernel2;
 
     }
 }

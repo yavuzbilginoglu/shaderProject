@@ -4089,6 +4089,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 20315885fb504e846aa40850fb408479, type: 3}
   rawImage: {fileID: 921796060}
+  width: 512
+  height: 512
+  sourceTexture: {fileID: 2800000, guid: 05439cd5992b2f64daffd9949ad8dd2d, type: 3}
 --- !u!1 &1771032533
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,20 +1,30 @@
 #pragma kernel ChangeGreen
 #pragma kernel ChangeRed
 
+Texture2D<float4> SourceTex;
 RWTexture2D<float4> _ResultTex;
 
 [numthreads(8, 8, 1)]
 void ChangeGreen(uint3 id : SV_DispatchThreadID)
 {
-    float4 color = _ResultTex[id.xy];
-    color.g = 0;
+    float4 color = SourceTex[id.xy];
+    if (color.r > 0.7 && color.g < 0.1 && color.b < 0.1) // Check if it's a red color
+    {
+        color.g = 1.0; // Convert red to green
+        color.r = 0.0;
+    }
     _ResultTex[id.xy] = color;
 }
 
 [numthreads(8, 8, 1)]
 void ChangeRed(uint3 id : SV_DispatchThreadID)
 {
-    float4 color = _ResultTex[id.xy];
-    color.r = 0;
+    float4 color = SourceTex[id.xy];
+    if (color.r < 0.1 && color.g > 0.4 && color.b < 0.5) // Check if it's a red color
+    {
+        color.g = 1.0; // Convert red to green
+        color.r = 1.0;
+    }
+	
     _ResultTex[id.xy] = color;
 }
