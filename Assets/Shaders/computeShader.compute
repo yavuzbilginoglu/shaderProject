@@ -1,0 +1,70 @@
+struct HSVData {
+    float h;
+    float s;
+    float v;
+};
+
+#pragma kernel testHsv
+
+Texture2D<float4> SourceTex;
+RWTexture2D<float4> _ResultTex;
+SamplerState linearClampSampler;
+
+RWStructuredBuffer<HSVData> hsvBuffer;
+RWStructuredBuffer<float3> rgbBuffer;
+
+
+HSVData RGBToHSV(float3 rgb) {
+    HSVData hsv;
+
+    float cmax = max(max(rgb.r, rgb.g), rgb.b);
+    float cmin = min(min(rgb.r, rgb.g), rgb.b);
+    float delta = cmax - cmin;
+
+    if (delta == 0) {
+        hsv.h = 0;
+    }
+    else if (cmax == rgb.r) {
+        hsv.h = fmod((rgb.g - rgb.b) / delta, 6);
+    }
+    else if (cmax == rgb.g) {
+        hsv.h = (rgb.b - rgb.r) / delta + 2;
+    }
+    else if (cmax == rgb.b) {
+        hsv.h = (rgb.r - rgb.g) / delta + 4;
+    }
+
+    hsv.h = hsv.h / 6;
+    if (hsv.h < 0) {
+        hsv.h += 1;
+    }
+
+    if (cmax == 0) {
+        hsv.s = 0;
+    }
+    else {
+        hsv.s = delta / cmax;
+    }
+
+    hsv.v = cmax;
+
+    return hsv;
+}
+
+[numthreads(8, 8, 1)]
+void testHsv(uint3 id : SV_DispatchThreadID)
+{
+    float3 color = SourceTex[id.xy];
+	
+    HSVData hsv = RGBToHSV(color);
+	
+    float3 hsv2 = float3 (hsv.h, hsv.s, hsv.v);
+	
+    //float3 color2 = RGBToHSV(color);
+	
+    _ResultTex[id.xy] = float4 (color.rgb, 1.0);
+
+    int index = id.x + id.y * 640;
+    hsvBuffer[index] = hsv;
+	rgbBuffer[index] = color.rgb;
+}
