@@ -32,13 +32,15 @@ public class ComputeShaderExample : MonoBehaviour
     public RenderTexture renderTextureKernel1;
     public RenderTexture renderTextureKernel2;
     public TextMeshProUGUI hsvText;
+    public TextMeshProUGUI rgbText;
     private int kernel1;
     private Vector3[] rgbData;
     private void Start()
     {
         webcamTexture = new WebCamTexture();
-        //webcamTexture.requestedIsReadable = true;
+        //rgbText.text = "isdatargb: " + webcamTexture.isDataSRGB.ToString();
         webcamTexture.Play();
+
 
         
         hsvBuffer = new ComputeBuffer(width * height, sizeof(float) * 3);
@@ -71,9 +73,13 @@ public class ComputeShaderExample : MonoBehaviour
             shader.Dispatch(kernel1, width / 8, height / 8, 1);
         }
 
-        hsvText.text = "R=" + Mathf.RoundToInt(rgbData[153600].x * 255f).ToString("D3") +
-            ", G=" + Mathf.RoundToInt(rgbData[153600].y * 255f).ToString("D3") +
-            ", B=" + Mathf.RoundToInt(rgbData[153600].z * 255f).ToString("D3");
+        rgbText.text = "R=" + Mathf.RoundToInt(rgbData[153280].x * 255f).ToString("D3") +
+            ", G=" + Mathf.RoundToInt(rgbData[153280].y * 255f).ToString("D3") +
+            ", B=" + Mathf.RoundToInt(rgbData[153280].z * 255f).ToString("D3");
+
+        hsvText.text = "H=" + Mathf.RoundToInt(hsvData[153280].h * 360f).ToString("D3") +
+                       ", S=" + Mathf.RoundToInt(hsvData[153280].s * 100f).ToString("D3") +
+                       ", V=" + Mathf.RoundToInt(hsvData[153280].v * 100f).ToString("D3");
     }
 
     void OnDestroy()
