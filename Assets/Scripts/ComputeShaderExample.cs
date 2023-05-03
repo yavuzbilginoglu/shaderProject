@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using TMPro;
-using Unity.Mathematics;
 using Unity.VisualScripting;
 using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
@@ -67,7 +66,7 @@ public class ComputeShaderExample : MonoBehaviour
         if (webcamTexture.isPlaying && webcamTexture.didUpdateThisFrame)
         {
             shader.SetTexture(kernel1, "SourceTex", webcamTexture);
-            shader.SetTexture(kernel1, "_ResultTex", renderTextureKernel1);
+            shader.SetTexture(kernel1, "ResultTex", renderTextureKernel1);
             shader.SetBuffer(kernel1, "hsvBuffer", hsvBuffer);
             shader.SetBuffer(kernel1, "rgbBuffer", rgbBuffer);
             shader.Dispatch(kernel1, width / 8, height / 8, 1);

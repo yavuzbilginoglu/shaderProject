@@ -7,8 +7,16 @@ struct HSVData {
 #pragma kernel testHsv
 
 Texture2D<float4> SourceTex;
-RWTexture2D<float4> _ResultTex;
+RWTexture2D<float4> ResultTex;
 SamplerState linearClampSampler;
+
+float tolerance;
+float hedefHue;
+float lowerSaturation;
+float upperSaturation;
+float lowerValue;
+float upperValue;
+
 
 RWStructuredBuffer<HSVData> hsvBuffer;
 RWStructuredBuffer<float3> rgbBuffer;
@@ -62,9 +70,23 @@ void testHsv(uint3 id : SV_DispatchThreadID)
 	
     //float3 color2 = RGBToHSV(color);
 	
-    _ResultTex[id.xy] = float4 (color.rgb, 1.0);
+	
+    float lowerHue = hedefHue - tolerance;
+    float upperHue = hedefHue + tolerance;
+
+	
+    if (hsv.h >= lowerHue && hsv.h <= upperHue &&
+        hsv.s >= lowerSaturation && hsv.s <= upperSaturation &&
+        hsv.v >= lowerValue && hsv.v <= upperValue) {
+		
+        ResultTex[id.xy] = float4 (color.rgb, 1.0);
+    }
+    else {
+        ResultTex[id.xy] = float4 (0.0, 0.0, 0.0, 1.0);
+    }
 
     int index = id.x + id.y * 640;
     hsvBuffer[index] = hsv;
 	rgbBuffer[index] = color.rgb;
 }
+
