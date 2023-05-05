@@ -4,22 +4,29 @@ struct HSVData {
     float v;
 };
 
-#pragma kernel testHsv
+#pragma kernel ExtractColor
+#pragma kernel Dilate
 
 Texture2D<float4> SourceTex;
-RWTexture2D<float4> ResultTex;
-SamplerState linearClampSampler;
+RWTexture2D<float4> ExtractTex;
+RWTexture2D<float4> DilatedTex;
 
-float tolerance;
-float hedefHue;
+RWStructuredBuffer<HSVData> hsvBuffer;
+RWStructuredBuffer<float3> rgbBuffer;
+RWStructuredBuffer<float> dilateBuffer;
+
+
 float lowerSaturation;
 float upperSaturation;
 float lowerValue;
 float upperValue;
+float lowerHue1;
+float lowerHue2;
+float upperHue1;
+float upperHue2;
+float erodeSize; // 1-10;
+float dilateSize; // 1-10;
 
-
-RWStructuredBuffer<HSVData> hsvBuffer;
-RWStructuredBuffer<float3> rgbBuffer;
 
 
 HSVData RGBToHSV(float3 rgb) {
@@ -60,7 +67,7 @@ HSVData RGBToHSV(float3 rgb) {
 }
 
 [numthreads(8, 8, 1)]
-void testHsv(uint3 id : SV_DispatchThreadID)
+void ExtractColor(uint3 id : SV_DispatchThreadID)
 {
     float3 color = SourceTex[id.xy];
 	
@@ -70,23 +77,60 @@ void testHsv(uint3 id : SV_DispatchThreadID)
 	
     //float3 color2 = RGBToHSV(color);
 	
-	
-    float lowerHue = hedefHue - tolerance;
-    float upperHue = hedefHue + tolerance;
-
-	
-    if (hsv.h >= lowerHue && hsv.h <= upperHue &&
+	if (((hsv.h >= lowerHue1 && hsv.h <= upperHue1) || (hsv.h >= lowerHue2 && hsv.h <= upperHue2)) && 
         hsv.s >= lowerSaturation && hsv.s <= upperSaturation &&
         hsv.v >= lowerValue && hsv.v <= upperValue) {
 		
-        ResultTex[id.xy] = float4 (color.rgb, 1.0);
+        ExtractTex[id.xy] = float4 (0.0, 0.0, 0.0, 1.0);
     }
     else {
-        ResultTex[id.xy] = float4 (0.0, 0.0, 0.0, 1.0);
+        ExtractTex[id.xy] = float4 (1.0, 1.0, 1.0, 1.0);
     }
 
     int index = id.x + id.y * 640;
     hsvBuffer[index] = hsv;
 	rgbBuffer[index] = color.rgb;
+}
+
+[numthreads(8, 8, 1)]
+void Dilate(uint3 id : SV_DispatchThreadID)
+{
+    int kernelSize = 3 * dilateSize; // 3x3 komsular-slider ile kontorl ekle+ 1 *3 ile basla. 1-10 slider ile kontrol et
+	int halfKernelSize = (kernelSize - 1) / 2; // 3 ile basladiginda -1 0 1 araligini kontrol eder 5 ile basladiginda -2 -1 0 1 2 araligini kontrol eder
+    bool isMax = false;
+
+    for (int i = -halfKernelSize; i <= halfKernelSize; i++)
+    {
+        for (int j = -halfKernelSize; j <= halfKernelSize; j++)
+        {
+			//komsu pikselin indeksini hesaplama
+            int2 nId = int2(id.xy + int2(i, j));
+			
+			//eger disardaysa hesaplama
+            if (nId.x < 0 || nId.y < 0 || nId.x >= 640 || nId.y >= 480) continue;
+
+			//extractan komsu pikselin degerini al
+            int nIndex = nId.x + nId.y * 640;
+            float4 val = ExtractTex[int2(nId)];
+
+			//eger komsu 1 ise isMax true yap
+            if (val.x == 1.0) {
+                isMax = true;
+                break;
+            }
+        }
+        if (isMax) break;
+    }
+
+    if (isMax) {
+        DilatedTex[id.xy] = float4(1.0, 1.0, 1.0, 1.0);
+    }
+    else {
+        DilatedTex[id.xy] = float4(0.0, 0.0, 0.0, 1.0);
+    }
+
+	//buffera ismaxa gore ayarla
+    int index = id.x + id.y * 640;
+    dilateBuffer[index] = isMax ? 1.0 : 0.0;
 }
 

@@ -24,36 +24,51 @@ public class ComputeShaderExample : MonoBehaviour
 
     public ComputeBuffer hsvBuffer;
     public ComputeBuffer rgbBuffer;
+    
     private HSVData[] hsvData;
+    private Vector3[] rgbData;
+    
 
-    private WebCamTexture webcamTexture;
-    public Texture2D inputTex;
-    public RenderTexture renderTextureKernel1;
-    public RenderTexture renderTextureKernel2;
+    public WebCamTexture webcamTexture;
+    public RenderTexture extractColorRenderTexture;
+    public RenderTexture erodeRenderTexture;
+    public RenderTexture dilateRenderTexture;
+
     public TextMeshProUGUI hsvText;
     public TextMeshProUGUI rgbText;
-    private int kernel1;
-    private Vector3[] rgbData;
+    
+    public ComputeBuffer dilatebuffer;
+    public ComputeBuffer erodebuffer;
+    
+    private int extractColorKernel;
+    private int dilateKernel;
+    private int erodeKernel;
+    
+
     private void Start()
     {
         webcamTexture = new WebCamTexture();
-        //rgbText.text = "isdatargb: " + webcamTexture.isDataSRGB.ToString();
         webcamTexture.Play();
+        
+        int bufferSize = 640 * 480;
+        
+        hsvBuffer = new ComputeBuffer(bufferSize, sizeof(float) * 3);
+        rgbBuffer = new ComputeBuffer(bufferSize, sizeof(float) * 3);
+        dilatebuffer = new ComputeBuffer(bufferSize, sizeof(float));
 
+        extractColorKernel = shader.FindKernel("ExtractColor");
+        dilateKernel = shader.FindKernel("Dilate");
 
-        
-        hsvBuffer = new ComputeBuffer(width * height, sizeof(float) * 3);
-        rgbBuffer = new ComputeBuffer(width * height, sizeof(float) * 3);
-        
-        kernel1 = shader.FindKernel("testHsv");
-        
+        extractColorRenderTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBFloat);
+        extractColorRenderTexture.enableRandomWrite = true;
+        extractColorRenderTexture.Create();
 
-        renderTextureKernel1 = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBFloat);
-        renderTextureKernel1.enableRandomWrite = true;
-        renderTextureKernel1.Create();
-        
-        
-        GetComponent<Renderer>().material.mainTexture = renderTextureKernel1;
+        dilateRenderTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBFloat);
+        dilateRenderTexture.enableRandomWrite = true;
+        dilateRenderTexture.Create();
+
+        GetComponent<Renderer>().material.mainTexture = dilateRenderTexture;
+
     }
     private void Update()
     {
@@ -62,23 +77,29 @@ public class ComputeShaderExample : MonoBehaviour
 
         rgbData = new Vector3[width * height];
         rgbBuffer.GetData(rgbData);
-        
+
         if (webcamTexture.isPlaying && webcamTexture.didUpdateThisFrame)
         {
-            shader.SetTexture(kernel1, "SourceTex", webcamTexture);
-            shader.SetTexture(kernel1, "ResultTex", renderTextureKernel1);
-            shader.SetBuffer(kernel1, "hsvBuffer", hsvBuffer);
-            shader.SetBuffer(kernel1, "rgbBuffer", rgbBuffer);
-            shader.Dispatch(kernel1, width / 8, height / 8, 1);
+            shader.SetTexture(extractColorKernel, "SourceTex", webcamTexture);
+            shader.SetTexture(extractColorKernel, "ExtractTex", extractColorRenderTexture);
+            shader.SetBuffer(extractColorKernel, "rgbBuffer", rgbBuffer);
+            shader.SetBuffer(extractColorKernel, "hsvBuffer", hsvBuffer);
+            shader.Dispatch(extractColorKernel, width / 8, height / 8, 1);
+
+            shader.SetTexture(dilateKernel, "ExtractTex", extractColorRenderTexture);
+            shader.SetTexture(dilateKernel, "DilatedTex", dilateRenderTexture);
+            shader.SetBuffer(dilateKernel, "dilateBuffer", dilatebuffer);
+            shader.Dispatch(dilateKernel, width / 8, height / 8, 1);
+           
         }
 
-        rgbText.text = "R=" + Mathf.RoundToInt(rgbData[153280].x * 255f).ToString("D3") +
-            ", G=" + Mathf.RoundToInt(rgbData[153280].y * 255f).ToString("D3") +
-            ", B=" + Mathf.RoundToInt(rgbData[153280].z * 255f).ToString("D3");
+        //rgbText.text = "R=" + Mathf.RoundToInt(rgbData[153280].x * 255f).ToString("D3") +
+        //    ", G=" + Mathf.RoundToInt(rgbData[153280].y * 255f).ToString("D3") +
+        //    ", B=" + Mathf.RoundToInt(rgbData[153280].z * 255f).ToString("D3");
 
-        hsvText.text = "H=" + Mathf.RoundToInt(hsvData[153280].h * 360f).ToString("D3") +
-                       ", S=" + Mathf.RoundToInt(hsvData[153280].s * 100f).ToString("D3") +
-                       ", V=" + Mathf.RoundToInt(hsvData[153280].v * 100f).ToString("D3");
+        //hsvText.text = "H=" + Mathf.RoundToInt(hsvData[153280].h * 360f).ToString("D3") +
+        //               ", S=" + Mathf.RoundToInt(hsvData[153280].s * 100f).ToString("D3") +
+        //               ", V=" + Mathf.RoundToInt(hsvData[153280].v * 100f).ToString("D3") + " FPS: " + (int)(1f / Time.deltaTime);
     }
 
     void OnDestroy()
@@ -93,6 +114,12 @@ public class ComputeShaderExample : MonoBehaviour
         {
             rgbBuffer.Release();
             rgbBuffer = null;
+        }
+
+        if (dilatebuffer != null)
+        {
+            dilatebuffer.Release();
+            dilatebuffer = null;
         }
     }
 }
