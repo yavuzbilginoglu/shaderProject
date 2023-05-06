@@ -81,10 +81,10 @@ void ExtractColor(uint3 id : SV_DispatchThreadID)
         hsv.s >= lowerSaturation && hsv.s <= upperSaturation &&
         hsv.v >= lowerValue && hsv.v <= upperValue) {
 		
-        ExtractTex[id.xy] = float4 (0.0, 0.0, 0.0, 1.0);
+        ExtractTex[id.xy] = float4 (1.0, 1.0, 1.0, 1.0);
     }
     else {
-        ExtractTex[id.xy] = float4 (1.0, 1.0, 1.0, 1.0);
+        ExtractTex[id.xy] = float4 (0.0, 0.0, 0.0, 1.0);
     }
 
     int index = id.x + id.y * 640;

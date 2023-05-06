@@ -318,68 +318,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 70745454}
   m_CullTransparentMesh: 1
---- !u!1 &84930465
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 84930466}
-  - component: {fileID: 84930467}
-  m_Layer: 0
-  m_Name: slideControl
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &84930466
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 84930465}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 831.74475, y: 837.45544, z: -5.442027}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 5
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &84930467
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 84930465}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c2754185abb8b0042af6850c9a98a982, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: 9d9c8f77d445bb14cb91dca955dd422e, type: 3}
-  toleranceSlider: {fileID: 469855379}
-  hedefHueSlider: {fileID: 699179329}
-  lowerSaturationSlider: {fileID: 1063439291}
-  upperSaturationSlider: {fileID: 888321679}
-  lowerValueSlider: {fileID: 1688993706}
-  upperValueSlider: {fileID: 204666883}
-  erodeSlider: {fileID: 317151406}
-  dilateSlider: {fileID: 1753680515}
-  toleranceValueText: {fileID: 1570282293}
-  hedefHueText: {fileID: 1067955232}
-  lowerSaturationText: {fileID: 968779199}
-  upperSaturationText: {fileID: 2056302929}
-  lowerValueText: {fileID: 94354225}
-  upperValueText: {fileID: 2104136228}
-  erodeText: {fileID: 509914598}
-  dilateText: {fileID: 616772648}
-  computeShaderExample: {fileID: 734106716}
 --- !u!1 &94354223
 GameObject:
   m_ObjectHideFlags: 0
@@ -760,13 +698,13 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UnityEngine.ComputeShader, UnityEngine
-        m_MethodName: 
+      - m_Target: {fileID: 734106716}
+        m_TargetAssemblyTypeName: ComputeShaderExample, Assembly-CSharp
+        m_MethodName: OnUpperValueValueChanged
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -1115,13 +1053,13 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UnityEngine.ComputeShader, UnityEngine
-        m_MethodName: 
+      - m_Target: {fileID: 734106716}
+        m_TargetAssemblyTypeName: ComputeShaderExample, Assembly-CSharp
+        m_MethodName: OnErodeValueChanged
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -1602,7 +1540,19 @@ MonoBehaviour:
   m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 734106716}
+        m_TargetAssemblyTypeName: ComputeShaderExample, Assembly-CSharp
+        m_MethodName: OnToleranceValueChanged
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &509914596
 GameObject:
   m_ObjectHideFlags: 0
@@ -2002,7 +1952,19 @@ MonoBehaviour:
   m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 734106716}
+        m_TargetAssemblyTypeName: ComputeShaderExample, Assembly-CSharp
+        m_MethodName: OnHueValueChanged
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -2168,11 +2130,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 9d9c8f77d445bb14cb91dca955dd422e, type: 3}
   webcamTexture: {fileID: 0}
-  renderTextureKernel1: {fileID: 0}
-  renderTextureKernel2: {fileID: 0}
-  renderTextureKernel3: {fileID: 0}
+  extractColorRenderTexture: {fileID: 0}
+  erodeRenderTexture: {fileID: 0}
+  dilateRenderTexture: {fileID: 0}
   hsvText: {fileID: 425244415}
   rgbText: {fileID: 2017988452}
+  toleranceSlider: {fileID: 469855379}
+  hedefHueSlider: {fileID: 699179329}
+  lowerSaturationSlider: {fileID: 1063439291}
+  upperSaturationSlider: {fileID: 888321679}
+  lowerValueSlider: {fileID: 1688993706}
+  upperValueSlider: {fileID: 204666883}
+  erodeSlider: {fileID: 317151406}
+  dilateSlider: {fileID: 1753680515}
+  toleranceValueText: {fileID: 1570282293}
+  hedefHueText: {fileID: 1067955232}
+  lowerSaturationText: {fileID: 968779199}
+  upperSaturationText: {fileID: 2056302929}
+  lowerValueText: {fileID: 94354225}
+  upperValueText: {fileID: 2104136228}
+  erodeText: {fileID: 509914598}
+  dilateText: {fileID: 616772648}
 --- !u!65 &734106717
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2380,7 +2358,19 @@ MonoBehaviour:
   m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 734106716}
+        m_TargetAssemblyTypeName: ComputeShaderExample, Assembly-CSharp
+        m_MethodName: OnUpperSaturationValueChanged
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &890971574
 GameObject:
   m_ObjectHideFlags: 0
@@ -2897,7 +2887,19 @@ MonoBehaviour:
   m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 734106716}
+        m_TargetAssemblyTypeName: ComputeShaderExample, Assembly-CSharp
+        m_MethodName: OnLowerSaturationValueChanged
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1067955230
 GameObject:
   m_ObjectHideFlags: 0
@@ -5008,13 +5010,13 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UnityEngine.ComputeShader, UnityEngine
-        m_MethodName: 
+      - m_Target: {fileID: 734106716}
+        m_TargetAssemblyTypeName: ComputeShaderExample, Assembly-CSharp
+        m_MethodName: OnLowerValueValueChanged
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -5219,13 +5221,25 @@ MonoBehaviour:
   m_FillRect: {fileID: 158334811}
   m_HandleRect: {fileID: 2041414743}
   m_Direction: 0
-  m_MinValue: 1
+  m_MinValue: 0
   m_MaxValue: 10
   m_WholeNumbers: 0
-  m_Value: 1
+  m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 734106716}
+        m_TargetAssemblyTypeName: ComputeShaderExample, Assembly-CSharp
+        m_MethodName: OnDilateValueChanged
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1757696196
 GameObject:
   m_ObjectHideFlags: 0
