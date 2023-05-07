@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,8 +12,8 @@ public class ComputeShaderExample : MonoBehaviour
     };
     
     public ComputeShader shader;
-    private int width = 640;
-    private int height = 480;
+    private readonly int width = 640;
+    private readonly int height = 480;
 
     public ComputeBuffer hsvBuffer;
     public ComputeBuffer rgbBuffer;
@@ -28,8 +27,8 @@ public class ComputeShaderExample : MonoBehaviour
     public RenderTexture erodeRenderTexture;
     public RenderTexture dilateRenderTexture;
 
-    public TextMeshProUGUI hsvText;
-    public TextMeshProUGUI rgbText;
+    //public Text hsvText;
+    //public Text rgbText;
     
     public ComputeBuffer dilatebuffer;
     public ComputeBuffer erodebuffer;
@@ -47,14 +46,14 @@ public class ComputeShaderExample : MonoBehaviour
     public Slider erodeSlider;
     public Slider dilateSlider;
 
-    public TextMeshProUGUI toleranceValueText;
-    public TextMeshProUGUI hedefHueText;
-    public TextMeshProUGUI lowerSaturationText;
-    public TextMeshProUGUI upperSaturationText;
-    public TextMeshProUGUI lowerValueText;
-    public TextMeshProUGUI upperValueText;
-    public TextMeshProUGUI erodeText;
-    public TextMeshProUGUI dilateText;
+    public Text toleranceValueText;
+    public Text hedefHueText;
+    public Text lowerSaturationText;
+    public Text upperSaturationText;
+    public Text lowerValueText;
+    public Text upperValueText;
+    public Text erodeText;
+    public Text dilateText;
 
     private float tolerance;
     private float hedefhue;
@@ -64,8 +63,8 @@ public class ComputeShaderExample : MonoBehaviour
     private float uppersaturation;
     private float lowervalue;
     private float uppervalue;
-    private float erodesize; //1-10
-    private float dilatesize; //1-10
+    private float erodesize; 
+    private float dilatesize;
 
 
     private void Start()
@@ -183,7 +182,7 @@ public class ComputeShaderExample : MonoBehaviour
             erodeText.text = erodeSlider.value.ToString();
             dilateText.text = dilateSlider.value.ToString();
 
-            rgbText.text = "FPS: " + (int)(1f / Time.deltaTime);
+            //rgbText.text = "FPS: " + (int)(1f / Time.deltaTime);
         }
     }
 
