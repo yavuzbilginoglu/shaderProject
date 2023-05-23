@@ -1,136 +1,204 @@
-struct HSVData {
-    float h;
-    float s;
-    float v;
-};
-
-#pragma kernel ExtractColor
-#pragma kernel Dilate
+#pragma kernel ExtractColorRedTeam
+#pragma kernel showKernel
+#pragma kernel dilateKernel
+#pragma kernel erodeKernel
+#pragma kernel dilateKernel2
+#pragma kernel erodeKernel2
 
 Texture2D<float4> SourceTex;
 RWTexture2D<float4> ExtractTex;
-RWTexture2D<float4> DilatedTex;
 
-RWStructuredBuffer<HSVData> hsvBuffer;
-RWStructuredBuffer<float3> rgbBuffer;
-RWStructuredBuffer<float> dilateBuffer;
-
-
-float lowerSaturation;
-float upperSaturation;
-float lowerValue;
-float upperValue;
-float lowerHue1;
-float lowerHue2;
-float upperHue1;
-float upperHue2;
-float erodeSize; // 1-10;
-float dilateSize; // 1-10;
+RWTexture2D<uint> colorBuffer;
+RWTexture2D<uint> dilateBuffer;
+RWTexture2D<uint> hedefBuffer;
+RWTexture2D<uint> dilateBuffer2;
+RWTexture2D<uint> hedefBuffer2;
 
 
+uint2 RectXY;
+uint2 RectWH;
 
-HSVData RGBToHSV(float3 rgb) {
-    HSVData hsv;
+
+groupshared uint coloresik[5] = { 0,1,1,1,1 };
+groupshared float3 colorclasses[13] = {
+    float3(0.0, 0.0, 0.0),
+    float3(0.0, 0.0, 1.0),
+    float3(0.0, 1.0, 0.0),
+    float3(0.0, 1.0, 1.0),
+    float3(1.0, 0.0, 0.0),
+    float3(1.0, 0.0, 1.0),
+    float3(1.0, 1.0, 0.0),
+    float3(1.0, 1.0, 1.0),
+    float3(0.5, 0.5, 0.5),
+    float3(0.5, 0.5, 1.0),
+    float3(0.5, 1.0, 0.5),
+    float3(0.5, 1.0, 1.0),
+    float3(1.0, 0.5, 0.5)
+};
+groupshared uint dilateShared[10][10];
+
+
+float3 RGBToHSV(float3 rgb) {
+    float3 hsv;
 
     float cmax = max(max(rgb.r, rgb.g), rgb.b);
     float cmin = min(min(rgb.r, rgb.g), rgb.b);
     float delta = cmax - cmin;
 
     if (delta == 0) {
-        hsv.h = 0;
+        hsv.x = 0;
     }
     else if (cmax == rgb.r) {
-        hsv.h = fmod((rgb.g - rgb.b) / delta, 6);
+        hsv.x = fmod((rgb.g - rgb.b) / delta, 6);
     }
     else if (cmax == rgb.g) {
-        hsv.h = (rgb.b - rgb.r) / delta + 2;
+        hsv.x = (rgb.b - rgb.r) / delta + 2;
     }
     else if (cmax == rgb.b) {
-        hsv.h = (rgb.r - rgb.g) / delta + 4;
+        hsv.x = (rgb.r - rgb.g) / delta + 4;
     }
 
-    hsv.h = hsv.h / 6;
-    if (hsv.h < 0) {
-        hsv.h += 1;
+    hsv.x = hsv.x / 6;
+    if (hsv.x < 0) {
+        hsv.x += 1;
     }
 
     if (cmax == 0) {
-        hsv.s = 0;
+        hsv.y = 0;
     }
     else {
-        hsv.s = delta / cmax;
+        hsv.y = delta / cmax;
     }
 
-    hsv.v = cmax;
+    hsv.z = cmax;
 
     return hsv;
 }
 
 [numthreads(8, 8, 1)]
-void ExtractColor(uint3 id : SV_DispatchThreadID)
+void ExtractColorRedTeam(uint3 id : SV_DispatchThreadID)
 {
-    float3 color = SourceTex[id.xy];
+	float3 hsv = RGBToHSV(SourceTex[id.xy + RectXY]);
+    float2 sv = hsv.yz - 0.35;
+    int trash = ceil(sv.x) * ceil(sv.y);
 	
-    HSVData hsv = RGBToHSV(color);
+    int colorclass = ((round(hsv.x * 12.0f) % 12) + 1) * trash;
 	
-    float3 hsv2 = float3 (hsv.h, hsv.s, hsv.v);
-	
-    //float3 color2 = RGBToHSV(color);
-	
-	if (((hsv.h >= lowerHue1 && hsv.h <= upperHue1) || (hsv.h >= lowerHue2 && hsv.h <= upperHue2)) && 
-        hsv.s >= lowerSaturation && hsv.s <= upperSaturation &&
-        hsv.v >= lowerValue && hsv.v <= upperValue) {
-		
-        ExtractTex[id.xy] = float4 (1.0, 1.0, 1.0, 1.0);
-    }
-    else {
-        ExtractTex[id.xy] = float4 (0.0, 0.0, 0.0, 1.0);
-    }
+    colorBuffer[id.xy] = colorclass;
 
-    int index = id.x + id.y * 640;
-    hsvBuffer[index] = hsv;
-	rgbBuffer[index] = color.rgb;
+    dilateBuffer[id.xy] = colorclass == 1 ? 1u : 0u;
 }
 
 [numthreads(8, 8, 1)]
-void Dilate(uint3 id : SV_DispatchThreadID)
-{
-    int kernelSize = 3 * dilateSize; // 3x3 komsular-slider ile kontorl ekle+ 1 *3 ile basla. 1-10 slider ile kontrol et
-	int halfKernelSize = (kernelSize - 1) / 2; // 3 ile basladiginda -1 0 1 araligini kontrol eder 5 ile basladiginda -2 -1 0 1 2 araligini kontrol eder
-    bool isMax = false;
+void dilateKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    uint2 gid = id.xy;
+    uint2 lid = groupThreadId.xy;
 
-    for (int i = -halfKernelSize; i <= halfKernelSize; i++)
-    {
-        for (int j = -halfKernelSize; j <= halfKernelSize; j++)
-        {
-			//komsu pikselin indeksini hesaplama
-            int2 nId = int2(id.xy + int2(i, j));
-			
-			//eger disardaysa hesaplama
-            if (nId.x < 0 || nId.y < 0 || nId.x >= 640 || nId.y >= 480) continue;
+    dilateShared[lid.x + 1][lid.y + 1] = dilateBuffer[gid];
 
-			//extractan komsu pikselin degerini al
-            int nIndex = nId.x + nId.y * 640;
-            float4 val = ExtractTex[int2(nId)];
-
-			//eger komsu 1 ise isMax true yap
-            if (val.x == 1.0) {
-                isMax = true;
-                break;
-            }
-        }
-        if (isMax) break;
+    if (lid.x == 0) {
+        dilateShared[0][lid.y + 1] = dilateBuffer[gid + uint2(-1, 0)];
+    }
+    else if (lid.x == 7) {
+        dilateShared[9][lid.y + 1] = dilateBuffer[gid + uint2(1, 0)];
     }
 
-    if (isMax) {
-        DilatedTex[id.xy] = float4(1.0, 1.0, 1.0, 1.0);
+    if (lid.y == 0) {
+        dilateShared[lid.x + 1][0] = dilateBuffer[gid + uint2(0, -1)];
     }
-    else {
-        DilatedTex[id.xy] = float4(0.0, 0.0, 0.0, 1.0);
+    else if (lid.y == 7) {
+        dilateShared[lid.x + 1][9] = dilateBuffer[gid + uint2(0, 1)];
     }
 
-	//buffera ismaxa gore ayarla
-    int index = id.x + id.y * 640;
-    dilateBuffer[index] = isMax ? 1.0 : 0.0;
+    GroupMemoryBarrierWithGroupSync();
+
+    hedefBuffer[gid] = dilateShared[lid.x + 1][lid.y + 1] || dilateShared[lid.x][lid.y + 1] || dilateShared[lid.x + 2][lid.y + 1] ||
+        dilateShared[lid.x + 1][lid.y] || dilateShared[lid.x + 1][lid.y + 2];
 }
 
+[numthreads(8, 8, 1)]
+void dilateKernel2(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    uint2 gid = id.xy;
+    uint2 lid = groupThreadId.xy;
+
+    dilateShared[lid.x + 1][lid.y + 1] = dilateBuffer2[gid];
+
+    if (lid.x == 0) {
+        dilateShared[0][lid.y + 1] = dilateBuffer2[gid + uint2(-1, 0)];
+    }
+    else if (lid.x == 7) {
+        dilateShared[9][lid.y + 1] = dilateBuffer2[gid + uint2(1, 0)];
+    }
+
+    if (lid.y == 0) {
+        dilateShared[lid.x + 1][0] = dilateBuffer2[gid + uint2(0, -1)];
+    }
+    else if (lid.y == 7) {
+        dilateShared[lid.x + 1][9] = dilateBuffer2[gid + uint2(0, 1)];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    hedefBuffer2[gid] = dilateShared[lid.x + 1][lid.y + 1] || dilateShared[lid.x][lid.y + 1] || dilateShared[lid.x + 2][lid.y + 1] ||
+        dilateShared[lid.x + 1][lid.y] || dilateShared[lid.x + 1][lid.y + 2];
+}
+
+[numthreads(8, 8, 1)]
+void erodeKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    uint2 gid = id.xy;
+    uint2 lid = groupThreadId.xy;
+
+    dilateShared[lid.x + 1][lid.y + 1] = !dilateBuffer[gid];
+
+    if (lid.x == 0) {
+        dilateShared[0][lid.y + 1] = !dilateBuffer[gid + uint2(-1, 0)];
+    }
+    else if (lid.x == 7) {
+        dilateShared[9][lid.y + 1] = !dilateBuffer[gid + uint2(1, 0)];
+    }
+
+    if (lid.y == 0) {
+        dilateShared[lid.x + 1][0] = !dilateBuffer[gid + uint2(0, -1)];
+    }
+    else if (lid.y == 7) {
+        dilateShared[lid.x + 1][9] = !dilateBuffer[gid + uint2(0, 1)];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    hedefBuffer[gid] = !(dilateShared[lid.x + 1][lid.y + 1] || dilateShared[lid.x][lid.y + 1] || dilateShared[lid.x + 2][lid.y + 1] ||
+        dilateShared[lid.x + 1][lid.y] || dilateShared[lid.x + 1][lid.y + 2]);
+}
+
+[numthreads(8, 8, 1)]
+void erodeKernel2(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    uint2 gid = id.xy;
+    uint2 lid = groupThreadId.xy;
+
+    dilateShared[lid.x + 1][lid.y + 1] = !dilateBuffer2[gid];
+
+    if (lid.x == 0) {
+        dilateShared[0][lid.y + 1] = !dilateBuffer2[gid + uint2(-1, 0)];
+    }
+    else if (lid.x == 7) {
+        dilateShared[9][lid.y + 1] = !dilateBuffer2[gid + uint2(1, 0)];
+    }
+
+    if (lid.y == 0) {
+        dilateShared[lid.x + 1][0] = !dilateBuffer2[gid + uint2(0, -1)];
+    }
+    else if (lid.y == 7) {
+        dilateShared[lid.x + 1][9] = !dilateBuffer2[gid + uint2(0, 1)];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    hedefBuffer2[gid] = !(dilateShared[lid.x + 1][lid.y + 1] || dilateShared[lid.x][lid.y + 1] || dilateShared[lid.x + 2][lid.y + 1] ||
+        dilateShared[lid.x + 1][lid.y] || dilateShared[lid.x + 1][lid.y + 2]);
+
+}
+
+[numthreads(8, 8, 1)]
+void showKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    ExtractTex[id.xy] = float4(1.0, 1.0, 1.0, 1.0) * dilateBuffer[id.xy];
+}

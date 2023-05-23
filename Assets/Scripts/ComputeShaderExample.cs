@@ -1,50 +1,39 @@
+using System;
+using System.Diagnostics;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 
+
 public class ComputeShaderExample : MonoBehaviour
 {
-
-    struct HSVData
-    {
-        public float h;
-        public float s;
-        public float v;
-    };
     
     public ComputeShader shader;
-    private readonly int width = 640;
-    private readonly int height = 480;
-
-    public ComputeBuffer hsvBuffer;
-    public ComputeBuffer rgbBuffer;
-    
-    private HSVData[] hsvData;
-    private Vector3[] rgbData;
+    private readonly int width = 480;
+    private readonly int height = 640;
+    public int rectWH = 256;
+    public int groupSize;
     
 
     public WebCamTexture webcamTexture;
     public RenderTexture extractColorRenderTexture;
-    public RenderTexture erodeRenderTexture;
-    public RenderTexture dilateRenderTexture;
-
-    //public Text hsvText;
-    //public Text rgbText;
+    public RenderTexture dilateAndErodeRenderTexture;
+    public RenderTexture colorbuffertex;
+    public RenderTexture dilatebuffertex;
+    public RenderTexture hedefbuffertex;
+    public Material test;
+    public Stopwatch stopwatch;
     
-    public ComputeBuffer dilatebuffer;
-    public ComputeBuffer erodebuffer;
+    public Text fpsText;
     
     private int extractColorKernel;
-    private int dilateKernel;
-    private int erodeKernel;
-
-    public Slider toleranceSlider;
-    public Slider hedefHueSlider;
-    public Slider lowerSaturationSlider;
-    public Slider upperSaturationSlider;
-    public Slider lowerValueSlider;
-    public Slider upperValueSlider;
-    public Slider erodeSlider;
-    public Slider dilateSlider;
+    private int showKernel;
+    private int dilateKernel1;
+    private int erodeKernel1;
+    private int dilateKernel2;
+    private int erodeKernel2;
+    private float cagrilmaSayisi = 0;
+    private float toplamSure = 0;
 
     public Text toleranceValueText;
     public Text hedefHueText;
@@ -56,7 +45,7 @@ public class ComputeShaderExample : MonoBehaviour
     public Text dilateText;
 
     private float tolerance;
-    private float hedefhue;
+    private float hue;
     private float lowerhue;
     private float upperhue;
     private float lowersaturation;
@@ -65,193 +54,272 @@ public class ComputeShaderExample : MonoBehaviour
     private float uppervalue;
     private float erodesize; 
     private float dilatesize;
+    public bool isDilateButtonActive = false;
 
+
+
+
+    private float[] araliklar = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+    private Vector2Int CalculateRectXY()
+    {
+        Vector2Int rectXY = new()
+        {
+            x = (width / 2 - rectWH / 2),
+            y = (height / 2 - rectWH / 2)
+        };
+        return rectXY;
+    }
 
     private void Start()
     {
         webcamTexture = new WebCamTexture();
         webcamTexture.Play();
-        
-        int bufferSize = 640 * 480;
-        
-        hsvBuffer = new ComputeBuffer(bufferSize, sizeof(float) * 3);
-        rgbBuffer = new ComputeBuffer(bufferSize, sizeof(float) * 3);
-        dilatebuffer = new ComputeBuffer(bufferSize, sizeof(float));
 
-        hsvData = new HSVData[width * height];
-        hsvBuffer.GetData(hsvData);
+        groupSize = rectWH / 8;
 
-        rgbData = new Vector3[width * height];
-        rgbBuffer.GetData(rgbData);
+        colorbuffertex = new RenderTexture(rectWH, rectWH, 0, RenderTextureFormat.RInt);
+        colorbuffertex.enableRandomWrite = true;
+        colorbuffertex.Create();
+
+        dilatebuffertex = new RenderTexture(rectWH, rectWH, 0,RenderTextureFormat.RInt);
+        dilatebuffertex.enableRandomWrite = true;
+        dilatebuffertex.Create();
+
+        hedefbuffertex = new RenderTexture(rectWH, rectWH, 0, RenderTextureFormat.RInt);
+        hedefbuffertex.enableRandomWrite = true;
+        hedefbuffertex.Create();
+
+        extractColorKernel = shader.FindKernel("ExtractColorRedTeam");
+        showKernel = shader.FindKernel("showKernel");
+        erodeKernel1 = shader.FindKernel("erodeKernel");
+        dilateKernel2 = shader.FindKernel("dilateKernel2");
+        erodeKernel2 = shader.FindKernel("erodeKernel2");
+        dilateKernel1 = shader.FindKernel("dilateKernel");
 
 
-        extractColorKernel = shader.FindKernel("ExtractColor");
-        dilateKernel = shader.FindKernel("Dilate");
 
-        extractColorRenderTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBFloat);
+        extractColorRenderTexture = new RenderTexture(rectWH, rectWH, 0, RenderTextureFormat.ARGBFloat);
         extractColorRenderTexture.enableRandomWrite = true;
         extractColorRenderTexture.Create();
 
-        dilateRenderTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBFloat);
-        dilateRenderTexture.enableRandomWrite = true;
-        dilateRenderTexture.Create();
+        dilateAndErodeRenderTexture = new RenderTexture(rectWH, rectWH, 0, RenderTextureFormat.ARGBFloat);
+        dilateAndErodeRenderTexture.enableRandomWrite = true;
+        dilateAndErodeRenderTexture.Create();
 
-        GetComponent<Renderer>().material.mainTexture = dilateRenderTexture;
 
-        tolerance = toleranceSlider.value;
-        hedefhue = hedefHueSlider.value;
-        lowersaturation = lowerSaturationSlider.value;
-        uppersaturation = upperSaturationSlider.value;
-        lowervalue = lowerValueSlider.value;
-        uppervalue = upperValueSlider.value;
-        erodesize = erodeSlider.value;
-        dilatesize = dilateSlider.value;
+        GetComponent<Renderer>().material.mainTexture = dilateAndErodeRenderTexture;
+        getParams();
+        initilizeShader();
+        stopwatch = new Stopwatch();
+
     }
     private void Update()
     {
-        if (webcamTexture.isPlaying && webcamTexture.didUpdateThisFrame)
+        if(webcamTexture.isPlaying && webcamTexture.didUpdateThisFrame)
         {
-            float[] ranges = { 0.0f, 0.0f, 0.0f, 0.0f };
-            lowerhue = hedefhue - tolerance;
-            upperhue = hedefhue + tolerance;
+            if (isDilateButtonActive)
+            {
+                stopwatch.Start();
+                cagrilmaSayisi++;
+                shader.Dispatch(extractColorKernel, groupSize, groupSize, 1);
+                for (int i = 0; i < 5; i++)
+                {
+                    shader.Dispatch(dilateKernel1, groupSize, groupSize, 1);
+                    shader.Dispatch(dilateKernel2, groupSize, groupSize, 1);
+                }
+                for (int i = 0; i < 5; i++)
+                {
+                    shader.Dispatch(erodeKernel1, groupSize, groupSize, 1);
+                    shader.Dispatch(erodeKernel2, groupSize, groupSize, 1);
+                }
+                stopwatch.Stop();
+                fpsText.text = "" + 1000 * (float)stopwatch.ElapsedMilliseconds / cagrilmaSayisi;
+            }
+            shader.SetTexture(showKernel, "dilateBuffer", dilatebuffertex);
+            shader.Dispatch(showKernel, groupSize, groupSize, 1);
+            //fpsText.text = "FPS: " + (int)(1f / Time.deltaTime);
+        }
+    }
 
-            if (lowerhue >= 0 && upperhue <= 360) // hue diskin ortasinda
-            {
-                ranges[0] = lowerhue;
-                ranges[1] = hedefhue;
-                ranges[2] = hedefhue;
-                ranges[3] = upperhue;
-            }
-            else if (lowerhue < 0 && upperhue > 360) //hatali veri
-            {
-                ranges[0] = 0.0f;
-                ranges[1] = 1.0f;
-                ranges[2] = 0.0f;
-                ranges[3] = 1.0f;
-            }
-            else if (lowerhue < 0) // alttan tasma
-            {
-                ranges[0] = 0.0f;
-                ranges[1] = upperhue;
-                ranges[2] = 360.0f + lowerhue;
-                ranges[3] = 1.0f;
-            }
-            else //ustten tasma
-            {
-                ranges[0] = lowerhue;
-                ranges[1] = 1.0f;
-                ranges[2] = 0.0f;
-                ranges[3] = (upperhue - 360);
-            }
+    public void buttonOnClick()
+    {
+        isDilateButtonActive = !isDilateButtonActive;
+       
+    }
 
-            shader.SetFloat("lowerSaturation", lowersaturation / 100.0f);
-            shader.SetFloat("upperSaturation", uppersaturation / 100.0f);
-            shader.SetFloat("lowerValue", lowervalue / 100.0f);
-            shader.SetFloat("upperValue", uppervalue / 100.0f);
-            shader.SetFloat("lowerHue1", ranges[0] / 360.0f);
-            shader.SetFloat("upperHue1", ranges[1] / 360.0f);
-            shader.SetFloat("lowerHue2", ranges[2] / 360.0f);
-            shader.SetFloat("upperHue2", ranges[3] / 360.0f);
-            shader.SetFloat("erodeSize", erodesize);
-            shader.SetFloat("dilateSize", dilatesize);
+    private void initializeDilateKernel()
+    {
+        shader.SetTexture(dilateKernel1, "dilateBuffer", dilatebuffertex);
+        shader.SetTexture(dilateKernel1, "hedefBuffer", hedefbuffertex);
+
+        shader.SetTexture(dilateKernel2, "dilateBuffer2", hedefbuffertex);
+        shader.SetTexture(dilateKernel2, "hedefBuffer2", dilatebuffertex);
+    }
+
+    private void initializeErodeKernel()
+    {
+        shader.SetTexture(erodeKernel1, "dilateBuffer", dilatebuffertex);
+        shader.SetTexture(erodeKernel1, "hedefBuffer", hedefbuffertex);
+
+        shader.SetTexture(erodeKernel2, "dilateBuffer2", hedefbuffertex);
+        shader.SetTexture(erodeKernel2, "hedefBuffer2", dilatebuffertex);
+    }
+
+    private void initilizeShader()
+    {
+        initializeParams();
+        shader.SetTexture(extractColorKernel, "SourceTex", webcamTexture);
+        shader.SetTexture(extractColorKernel, "colorBuffer", colorbuffertex);
+        shader.SetTexture(extractColorKernel, "dilateBuffer", dilatebuffertex);
+        initializeDilateKernel();
+        initializeErodeKernel();
+        shader.SetTexture(showKernel, "ExtractTex", dilateAndErodeRenderTexture);    
+    }
+    private void getParams()
+    {
+        uppersaturation = 100;
+        uppervalue = 100;
+        lowersaturation = 20;
+        lowervalue = 20;
+        hue = 0;
+        tolerance = 15;
+        dilatesize = 0;
+        erodesize = 0;
+    }
+    
+
+    private void initializeParams()
+    {
+        HueCalculate();
+        shader.SetFloat("lowerSaturation", lowersaturation / 100.0f);
+        shader.SetFloat("upperSaturation", uppersaturation / 100.0f);
+        shader.SetFloat("lowerValue", lowervalue / 100.0f);
+        shader.SetFloat("upperValue", uppervalue / 100.0f);
+        shader.SetFloat("lowerHue1", araliklar[0]);
+        shader.SetFloat("upperHue1", araliklar[1]);
+        shader.SetFloat("lowerHue2", araliklar[2]);
+        shader.SetFloat("upperHue2", araliklar[3]);
+        shader.SetFloat("erodeSize", erodesize);
+        shader.SetFloat("dilateSize", dilatesize);
+
+        Vector2Int rectXY = CalculateRectXY();
+        shader.SetInts("RectXY", rectXY.x, rectXY.y); 
+    }
+    private void HueCalculate()
+    {
+        float altLimit = hue - tolerance;
+        float ustLimit = hue + tolerance;
+
+        if (altLimit >= 0 && ustLimit <= 360)
+        {
             
-            shader.SetTexture(extractColorKernel, "SourceTex", webcamTexture);
-            shader.SetTexture(extractColorKernel, "ExtractTex", extractColorRenderTexture);
-            shader.SetBuffer(extractColorKernel, "rgbBuffer", rgbBuffer);
-            shader.SetBuffer(extractColorKernel, "hsvBuffer", hsvBuffer);
-            shader.Dispatch(extractColorKernel, width / 8, height / 8, 1);
-
-            if (dilateSlider.value >= 1)
-            {
-                shader.SetTexture(dilateKernel, "ExtractTex", extractColorRenderTexture);
-                shader.SetTexture(dilateKernel, "DilatedTex", dilateRenderTexture);
-                shader.SetBuffer(dilateKernel, "dilateBuffer", dilatebuffer);
-                shader.Dispatch(dilateKernel, width / 8, height / 8, 1);
-                GetComponent<Renderer>().material.mainTexture = dilateRenderTexture;
-            }else
-            {
-                GetComponent<Renderer>().material.mainTexture = extractColorRenderTexture;
-            }
+            araliklar[0] = altLimit / 360.0f;
+            araliklar[1] = hue / 360.0f;
+            araliklar[2] = hue / 360.0f;
+            araliklar[3] = ustLimit / 360.0f;
+        }
+        else if (altLimit < 0 && ustLimit > 360)
+        {
             
-            toleranceValueText.text = toleranceSlider.value.ToString();
-            hedefHueText.text = hedefHueSlider.value.ToString();
-            lowerSaturationText.text = lowerSaturationSlider.value.ToString();
-            upperSaturationText.text = upperSaturationSlider.value.ToString();
-            lowerValueText.text = lowerValueSlider.value.ToString();
-            upperValueText.text = upperValueSlider.value.ToString();
-            erodeText.text = erodeSlider.value.ToString();
-            dilateText.text = dilateSlider.value.ToString();
-
-            //rgbText.text = "FPS: " + (int)(1f / Time.deltaTime);
+            araliklar[0] = 0.0f;
+            araliklar[1] = 1.0f;
+            araliklar[2] = 0.0f;
+            araliklar[3] = 1.0f;
         }
-    }
-
-    public void OnToleranceValueChanged()
-    {
-        tolerance = toleranceSlider.value;
-    }
-
-    public void OnHueValueChanged()
-    {
-        hedefhue = hedefHueSlider.value;
-    }
-
-    public void OnLowerSaturationValueChanged()
-    {
-        lowersaturation = lowerSaturationSlider.value;
-    }
-
-    public void OnUpperSaturationValueChanged()
-    {
-        uppersaturation = upperSaturationSlider.value;
-    }
-
-    public void OnLowerValueValueChanged()
-    {
-        lowervalue = lowerValueSlider.value;
-    }
-
-    public void OnUpperValueValueChanged()
-    {
-        uppervalue = upperValueSlider.value;
-    }
-
-    public void OnErodeValueChanged()
-    {
-        erodesize = erodeSlider.value;
-    }
-
-    public void OnDilateValueChanged()
-    {
-        dilatesize = dilateSlider.value;
-    }
-
-
-    void OnDestroy()
-    {
-        if (hsvBuffer != null)
+        else if (altLimit < 0)
         {
-            hsvBuffer.Release();
-            hsvBuffer = null;
+            
+            araliklar[0] = 0.0f;
+            araliklar[1] = ustLimit / 360.0f;
+            araliklar[2] = (360 + altLimit) / 360.0f;
+            araliklar[3] = 1.0f;
+        }
+        else
+        {
+            
+            araliklar[0] = altLimit / 360.0f;
+            araliklar[1] = 1.0f;
+            araliklar[2] = 0.0f;
+            araliklar[3] = (ustLimit - 360) / 360.0f;
         }
 
-        if (rgbBuffer != null)
+    }
+    public void OnToleranceValueChanged(Slider slider)
+    {
+        tolerance = slider.value;
+        toleranceValueText.text = slider.value.ToString();
+        initializeParams();
+    }
+
+    public void OnHueValueChanged(Slider slider)
+    {
+        hue = slider.value;
+        hedefHueText.text = slider.value.ToString();
+        initializeParams();
+    }
+
+    public void OnLowerSaturationValueChanged(Slider slider)
+    {
+        lowersaturation = slider.value;
+        lowerSaturationText.text = slider.value.ToString();
+        initializeParams();
+    }
+
+    public void OnUpperSaturationValueChanged(Slider slider)
+    {
+        uppersaturation = slider.value;
+        upperSaturationText.text = slider.value.ToString();
+        initializeParams();
+    }
+
+    public void OnLowerValueValueChanged(Slider slider)
+    {
+        lowervalue = slider.value;
+        lowerValueText.text = slider.value.ToString();
+        initializeParams();
+    }
+
+    public void OnUpperValueValueChanged(Slider slider)
+    {
+        uppervalue = slider.value;
+        upperValueText.text = slider.value.ToString();
+        initializeParams();
+    }
+
+    public void OnErodeValueChanged(Slider slider)
+    {
+        erodesize = slider.value;
+        erodeText.text = slider.value.ToString();
+        initializeParams();
+    }
+
+    public void OnDilateValueChanged(Slider slider)
+    {
+        dilatesize = slider.value;
+        dilateText.text = slider.value.ToString();
+        initializeParams();
+    }
+
+    private void OnDestroy()
+    {
+        if (colorbuffertex != null)
         {
-            rgbBuffer.Release();
-            rgbBuffer = null;
+            colorbuffertex.Release();
+            colorbuffertex = null;
         }
 
-        if (dilatebuffer != null)
+        if (dilatebuffertex != null)
         {
-            dilatebuffer.Release();
-            dilatebuffer = null;
+            dilatebuffertex.Release();
+            dilatebuffertex = null;
         }
+
+        if (hedefbuffertex != null)
+        {
+            hedefbuffertex.Release();
+            hedefbuffertex = null;
+        }
+
     }
 }
-//rgbText.text = "R=" + Mathf.RoundToInt(rgbData[153280].x * 255f).ToString("D3") +
-//    ", G=" + Mathf.RoundToInt(rgbData[153280].y * 255f).ToString("D3") +
-//    ", B=" + Mathf.RoundToInt(rgbData[153280].z * 255f).ToString("D3");
-
-//hsvText.text = "H=" + Mathf.RoundToInt(hsvData[153280].h * 360f).ToString("D3") +
-//               ", S=" + Mathf.RoundToInt(hsvData[153280].s * 100f).ToString("D3") +
-//               ", V=" + Mathf.RoundToInt(hsvData[153280].v * 100f).ToString("D3") + " FPS: " + (int)(1f / Time.deltaTime);
