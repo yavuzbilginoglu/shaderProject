@@ -123,16 +123,11 @@ public class ComputeShaderExample : MonoBehaviour
                 stopwatch.Start();
                 cagrilmaSayisi++;
                 shader.Dispatch(extractColorKernel, groupSize, groupSize, 1);
-                for (int i = 0; i < 5; i++)
-                {
-                    shader.Dispatch(dilateKernel1, groupSize, groupSize, 1);
-                    shader.Dispatch(dilateKernel2, groupSize, groupSize, 1);
-                }
-                for (int i = 0; i < 5; i++)
-                {
+                shader.Dispatch(dilateKernel1, groupSize, groupSize, 1);
+                shader.Dispatch(dilateKernel2, groupSize, groupSize, 1);
+
                     shader.Dispatch(erodeKernel1, groupSize, groupSize, 1);
                     shader.Dispatch(erodeKernel2, groupSize, groupSize, 1);
-                }
                 stopwatch.Stop();
                 fpsText.text = "" + 1000 * (float)stopwatch.ElapsedMilliseconds / cagrilmaSayisi;
             }
@@ -169,7 +164,7 @@ public class ComputeShaderExample : MonoBehaviour
     private void initilizeShader()
     {
         initializeParams();
-        shader.SetTexture(extractColorKernel, "SourceTex", webcamTexture);
+        shader.SetTexture(extractColorKernel, "SourceTex", test.mainTexture);
         shader.SetTexture(extractColorKernel, "colorBuffer", colorbuffertex);
         shader.SetTexture(extractColorKernel, "dilateBuffer", dilatebuffertex);
         initializeDilateKernel();

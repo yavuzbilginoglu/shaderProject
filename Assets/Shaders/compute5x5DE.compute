@@ -1,14 +1,221 @@
-// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+#pragma kernel ExtractColorRedTeam
+#pragma kernel showKernel
+#pragma kernel dilateKernel
+#pragma kernel erodeKernel
+#pragma kernel dilateKernel2
+#pragma kernel erodeKernel2
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
-RWTexture2D<float4> Result;
+Texture2D<float4> SourceTex;
+RWTexture2D<float4> ExtractTex;
 
-[numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+RWTexture2D<uint> colorBuffer;
+RWTexture2D<uint> dilateBuffer;
+RWTexture2D<uint> hedefBuffer;
+RWTexture2D<uint> dilateBuffer2;
+RWTexture2D<uint> hedefBuffer2;
+
+
+uint2 RectXY;
+uint2 RectWH;
+
+
+groupshared uint coloresik[5] = { 0,1,1,1,1 };
+groupshared float3 colorclasses[13] = {
+    float3(0.0, 0.0, 0.0),
+    float3(0.0, 0.0, 1.0),
+    float3(0.0, 1.0, 0.0),
+    float3(0.0, 1.0, 1.0),
+    float3(1.0, 0.0, 0.0),
+    float3(1.0, 0.0, 1.0),
+    float3(1.0, 1.0, 0.0),
+    float3(1.0, 1.0, 1.0),
+    float3(0.5, 0.5, 0.5),
+    float3(0.5, 0.5, 1.0),
+    float3(0.5, 1.0, 0.5),
+    float3(0.5, 1.0, 1.0),
+    float3(1.0, 0.5, 0.5)
+};
+groupshared uint dilateShared[12][12];
+
+
+float3 RGBToHSV(float3 rgb) {
+    float3 hsv;
+
+    float cmax = max(max(rgb.r, rgb.g), rgb.b);
+    float cmin = min(min(rgb.r, rgb.g), rgb.b);
+    float delta = cmax - cmin;
+
+    if (delta == 0) {
+        hsv.x = 0;
+    }
+    else if (cmax == rgb.r) {
+        hsv.x = fmod((rgb.g - rgb.b) / delta, 6);
+    }
+    else if (cmax == rgb.g) {
+        hsv.x = (rgb.b - rgb.r) / delta + 2;
+    }
+    else if (cmax == rgb.b) {
+        hsv.x = (rgb.r - rgb.g) / delta + 4;
+    }
+
+    hsv.x = hsv.x / 6;
+    if (hsv.x < 0) {
+        hsv.x += 1;
+    }
+
+    if (cmax == 0) {
+        hsv.y = 0;
+    }
+    else {
+        hsv.y = delta / cmax;
+    }
+
+    hsv.z = cmax;
+
+    return hsv;
+}
+
+[numthreads(8, 8, 1)]
+void ExtractColorRedTeam(uint3 id : SV_DispatchThreadID)
 {
-    // TODO: insert actual code here!
+    float3 hsv = RGBToHSV(SourceTex[id.xy + RectXY]);
+    float2 sv = hsv.yz - 0.35;
+    int trash = ceil(sv.x) * ceil(sv.y);
 
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+    int colorclass = ((round(hsv.x * 12.0f) % 12) + 1) * trash;
+
+    colorBuffer[id.xy] = colorclass;
+
+    dilateBuffer[id.xy] = colorclass == 1 ? 1u : 0u;
+}
+
+[numthreads(8, 8, 1)]
+void dilateKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    uint2 gid = id.xy;
+    uint2 lid = groupThreadId.xy + uint2(2, 2);
+
+    dilateShared[lid.x][lid.y] = dilateBuffer[gid];
+
+    if (lid.x == 0) {
+        dilateShared[0][lid.y] = dilateBuffer[gid + uint2(-2, 0)];
+        dilateShared[1][lid.y] = dilateBuffer[gid + uint2(-1, 0)];
+    }
+    else if (lid.x == 7) {
+        dilateShared[11][lid.y] = dilateBuffer[gid + uint2(1, 0)];
+        dilateShared[10][lid.y] = dilateBuffer[gid + uint2(2, 0)];
+    }
+    if (lid.y == 0) {
+        dilateShared[lid.x][0] = dilateBuffer[gid + uint2(0, -2)];
+        dilateShared[lid.x][1] = dilateBuffer[gid + uint2(0, -1)];
+    }
+    else if (lid.y == 7) {
+        dilateShared[lid.x][11] = dilateBuffer[gid + uint2(0, 1)];
+        dilateShared[lid.x][10] = dilateBuffer[gid + uint2(0, 2)];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    hedefBuffer[gid] = dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y] || dilateShared[lid.x + 1][lid.y] ||
+        dilateShared[lid.x][lid.y - 1] || dilateShared[lid.x][lid.y + 1];
+}
+
+
+
+[numthreads(8, 8, 1)]
+void dilateKernel2(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    uint2 gid = id.xy;
+    uint2 lid = groupThreadId.xy + uint2(2, 2);
+
+    dilateShared[lid.x][lid.y] = dilateBuffer2[gid];
+
+    if (lid.x == 0) {
+        dilateShared[0][lid.y] = dilateBuffer2[gid + uint2(-2, 0)];
+        dilateShared[1][lid.y] = dilateBuffer2[gid + uint2(-1, 0)];
+    }
+    else if (lid.x == 7) {
+        dilateShared[11][lid.y] = dilateBuffer2[gid + uint2(1, 0)];
+        dilateShared[10][lid.y] = dilateBuffer2[gid + uint2(2, 0)];
+    }
+    if (lid.y == 0) {
+        dilateShared[lid.x][0] = dilateBuffer2[gid + uint2(0, -2)];
+        dilateShared[lid.x][1] = dilateBuffer2[gid + uint2(0, -1)];
+    }
+    else if (lid.y == 7) {
+        dilateShared[lid.x][11] = dilateBuffer2[gid + uint2(0, 1)];
+        dilateShared[lid.x][10] = dilateBuffer2[gid + uint2(0, 2)];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    hedefBuffer2[gid] = dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y] || dilateShared[lid.x + 1][lid.y] ||
+        dilateShared[lid.x][lid.y - 1] || dilateShared[lid.x][lid.y + 1];
+}
+
+
+[numthreads(8, 8, 1)]
+void erodeKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    uint2 gid = id.xy;
+    uint2 lid = groupThreadId.xy + uint2(2, 2);
+
+    dilateShared[lid.x][lid.y] = !dilateBuffer[gid];
+
+    if (lid.x == 0) {
+        dilateShared[0][lid.y] = !dilateBuffer[gid + uint2(-2, 0)];
+        dilateShared[1][lid.y] = !dilateBuffer[gid + uint2(-1, 0)];
+    }
+    else if (lid.x == 7) {
+        dilateShared[11][lid.y] = !dilateBuffer[gid + uint2(1, 0)];
+        dilateShared[10][lid.y] = !dilateBuffer[gid + uint2(2, 0)];
+    }
+    if (lid.y == 0) {
+        dilateShared[lid.x][0] = !dilateBuffer[gid + uint2(0, -2)];
+        dilateShared[lid.x][1] = !dilateBuffer[gid + uint2(0, -1)];
+    }
+    else if (lid.y == 7) {
+        dilateShared[lid.x][11] = !dilateBuffer[gid + uint2(0, 1)];
+        dilateShared[lid.x][10] = !dilateBuffer[gid + uint2(0, 2)];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    hedefBuffer[gid] = !(dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y] || dilateShared[lid.x + 1][lid.y] ||
+        dilateShared[lid.x][lid.y - 1] || dilateShared[lid.x][lid.y + 1]);
+}
+
+
+
+[numthreads(8, 8, 1)]
+void erodeKernel2(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    uint2 gid = id.xy;
+    uint2 lid = groupThreadId.xy + uint2(2, 2);
+
+    dilateShared[lid.x][lid.y] = !dilateBuffer2[gid];
+
+    if (lid.x == 0) {
+        dilateShared[0][lid.y] = !dilateBuffer2[gid + uint2(-2, 0)];
+        dilateShared[1][lid.y] = !dilateBuffer2[gid + uint2(-1, 0)];
+    }
+    else if (lid.x == 7) {
+        dilateShared[11][lid.y] = !dilateBuffer2[gid + uint2(1, 0)];
+        dilateShared[10][lid.y] = !dilateBuffer2[gid + uint2(2, 0)];
+    }
+    if (lid.y == 0) {
+        dilateShared[lid.x][0] = !dilateBuffer2[gid + uint2(0, -2)];
+        dilateShared[lid.x][1] = !dilateBuffer2[gid + uint2(0, -1)];
+    }
+    else if (lid.y == 7) {
+        dilateShared[lid.x][11] = !dilateBuffer2[gid + uint2(0, 1)];
+        dilateShared[lid.x][10] = !dilateBuffer2[gid + uint2(0, 2)];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    hedefBuffer2[gid] = !(dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y] || dilateShared[lid.x + 1][lid.y] ||
+        dilateShared[lid.x][lid.y - 1] || dilateShared[lid.x][lid.y + 1]);
+}
+
+
+[numthreads(8, 8, 1)]
+void showKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID) {
+    ExtractTex[id.xy] = float4(1.0, 1.0, 1.0, 1.0) * dilateBuffer[id.xy];
 }

@@ -4750,7 +4750,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7119669a747ace04cba158adf178360f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: 9d9c8f77d445bb14cb91dca955dd422e, type: 3}
+  shader: {fileID: 7200000, guid: a04d5180791a92a46bcd88de8767a195, type: 3}
   rectWH: 256
   groupSize: 0
   webcamTexture: {fileID: 0}
