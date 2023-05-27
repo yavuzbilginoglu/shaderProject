@@ -73,8 +73,8 @@ public class ComputeShaderExample : MonoBehaviour
 
     private void Start()
     {
-        webcamTexture = new WebCamTexture();
-        webcamTexture.Play();
+        //webcamTexture = new WebCamTexture();
+        //webcamTexture.Play();
 
         groupSize = rectWH / 8;
 
@@ -116,8 +116,8 @@ public class ComputeShaderExample : MonoBehaviour
     }
     private void Update()
     {
-        if(webcamTexture.isPlaying && webcamTexture.didUpdateThisFrame)
-        {
+        //if(webcamTexture.isPlaying && webcamTexture.didUpdateThisFrame)
+        //{
             if (isDilateButtonActive)
             {
                 stopwatch.Start();
@@ -125,6 +125,10 @@ public class ComputeShaderExample : MonoBehaviour
                 shader.Dispatch(extractColorKernel, groupSize, groupSize, 1);
                 shader.Dispatch(dilateKernel1, groupSize, groupSize, 1);
                 shader.Dispatch(dilateKernel2, groupSize, groupSize, 1);
+                shader.Dispatch(dilateKernel1, groupSize, groupSize, 1);
+                shader.Dispatch(dilateKernel2, groupSize, groupSize, 1);
+                shader.Dispatch(erodeKernel1, groupSize, groupSize, 1);
+                shader.Dispatch(erodeKernel2, groupSize, groupSize, 1);
                 shader.Dispatch(erodeKernel1, groupSize, groupSize, 1);
                 shader.Dispatch(erodeKernel2, groupSize, groupSize, 1);
                 stopwatch.Stop();
@@ -133,7 +137,7 @@ public class ComputeShaderExample : MonoBehaviour
             shader.SetTexture(showKernel, "dilateBuffer", dilatebuffertex);
             shader.Dispatch(showKernel, groupSize, groupSize, 1);
             //fpsText.text = "FPS: " + (int)(1f / Time.deltaTime);
-        }
+        //}
     }
 
     public void buttonOnClick()

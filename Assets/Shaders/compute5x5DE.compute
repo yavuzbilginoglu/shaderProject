@@ -99,27 +99,54 @@ void dilateKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_Group
     if (lid.x == 2) {
         dilateShared[0][lid.y] = dilateBuffer[gid + uint2(-2, 0)];
         dilateShared[1][lid.y] = dilateBuffer[gid + uint2(-1, 0)];
+        if (lid.y == 2) {
+            dilateShared[0][0] = dilateBuffer[gid + uint2(-2, -2)];
+            dilateShared[1][1] = dilateBuffer[gid + uint2(-1, -1)];
+            dilateShared[1][0] = dilateBuffer[gid + uint2(-1, -2)];
+            dilateShared[0][1] = dilateBuffer[gid + uint2(-2, -1)];
+        }
+        else if (lid.y == 9)
+        {
+            dilateShared[0][11] = dilateBuffer[gid + uint2(-2, 2)];
+            dilateShared[0][10] = dilateBuffer[gid + uint2(-2, 1)];
+            dilateShared[1][11] = dilateBuffer[gid + uint2(-1, 2)];
+            dilateShared[1][10] = dilateBuffer[gid + uint2(-1, -1)];
+        }
     }
     else if (lid.x == 9) {
         dilateShared[11][lid.y] = dilateBuffer[gid + uint2(1, 0)];
         dilateShared[10][lid.y] = dilateBuffer[gid + uint2(2, 0)];
+        if (lid.y == 2) {
+            dilateShared[11][0] = dilateBuffer[gid + uint2(2, -2)];
+            dilateShared[11][1] = dilateBuffer[gid + uint2(2, -1)];
+            dilateShared[10][0] = dilateBuffer[gid + uint2(1, -2)];
+            dilateShared[10][1] = dilateBuffer[gid + uint2(1, -1)];
+        }
     }
     if (lid.y == 2) {
         dilateShared[lid.x][0] = dilateBuffer[gid + uint2(0, -2)];
         dilateShared[lid.x][1] = dilateBuffer[gid + uint2(0, -1)];
+
     }
     else if (lid.y == 9) {
         dilateShared[lid.x][11] = dilateBuffer[gid + uint2(0, 1)];
         dilateShared[lid.x][10] = dilateBuffer[gid + uint2(0, 2)];
+        if (lid.x == 9) {
+            dilateShared[11][11] = dilateBuffer[gid + uint2(2, 2)];
+            dilateShared[11][10] = dilateBuffer[gid + uint2(2, 1)];
+            dilateShared[10][11] = dilateBuffer[gid + uint2(1, 2)];
+            dilateShared[10][10] = dilateBuffer[gid + uint2(1, 1)];
+        }
     }
 
     GroupMemoryBarrierWithGroupSync();
 	
-    hedefBuffer[gid] = dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y] || dilateShared[lid.x + 1][lid.y] ||
-        dilateShared[lid.x][lid.y - 1] || dilateShared[lid.x][lid.y + 1] || dilateShared[lid.x - 1][lid.y - 1] ||
-        dilateShared[lid.x - 1][lid.y + 1] || dilateShared[lid.x + 1][lid.y - 1] || dilateShared[lid.x + 1][lid.y + 1] ||
-        dilateShared[lid.x - 2][lid.y] || dilateShared[lid.x + 2][lid.y] || dilateShared[lid.x][lid.y - 2] ||
-        dilateShared[lid.x][lid.y + 2];
+    hedefBuffer[gid] = dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y - 1] ||
+        dilateShared[lid.x - 1][lid.y + 1] || dilateShared[lid.x + 1][lid.y - 1] || dilateShared[lid.x + 1][lid.y + 1] || 
+        dilateShared[lid.x - 2][lid.y] || dilateShared[lid.x + 2][lid.y] ||
+        dilateShared[lid.x][lid.y - 2] || dilateShared[lid.x][lid.y + 2] ||
+        dilateShared[lid.x - 2][lid.y - 2] || dilateShared[lid.x + 2][lid.y - 2] || dilateShared[lid.x + 2][lid.y + 2] ||
+        dilateShared[lid.x - 2][lid.y + 2];
 }
 
 
@@ -130,31 +157,58 @@ void dilateKernel2(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_Grou
     uint2 lid = groupThreadId.xy + uint2(2, 2);
 
     dilateShared[lid.x][lid.y] = dilateBuffer2[gid];
-
+	
     if (lid.x == 2) {
         dilateShared[0][lid.y] = dilateBuffer2[gid + uint2(-2, 0)];
         dilateShared[1][lid.y] = dilateBuffer2[gid + uint2(-1, 0)];
+        if (lid.y == 2) {
+            dilateShared[0][0] = dilateBuffer2[gid + uint2(-2, -2)];
+            dilateShared[1][1] = dilateBuffer2[gid + uint2(-1, -1)];
+            dilateShared[1][0] = dilateBuffer2[gid + uint2(-1, -2)];
+            dilateShared[0][1] = dilateBuffer2[gid + uint2(-2, -1)];
+        }
+        else if (lid.y == 9)
+        {
+            dilateShared[0][11] = dilateBuffer2[gid + uint2(-2, 2)];
+            dilateShared[0][10] = dilateBuffer2[gid + uint2(-2, 1)];
+            dilateShared[1][11] = dilateBuffer2[gid + uint2(-1, 2)];
+            dilateShared[1][10] = dilateBuffer2[gid + uint2(-1, -1)];
+        }
     }
     else if (lid.x == 9) {
         dilateShared[11][lid.y] = dilateBuffer2[gid + uint2(1, 0)];
         dilateShared[10][lid.y] = dilateBuffer2[gid + uint2(2, 0)];
+        if (lid.y == 2) {
+            dilateShared[11][0] = dilateBuffer2[gid + uint2(2, -2)];
+            dilateShared[11][1] = dilateBuffer2[gid + uint2(2, -1)];
+            dilateShared[10][0] = dilateBuffer2[gid + uint2(1, -2)];
+            dilateShared[10][1] = dilateBuffer2[gid + uint2(1, -1)];
+        }
     }
     if (lid.y == 2) {
         dilateShared[lid.x][0] = dilateBuffer2[gid + uint2(0, -2)];
         dilateShared[lid.x][1] = dilateBuffer2[gid + uint2(0, -1)];
+
     }
     else if (lid.y == 9) {
         dilateShared[lid.x][11] = dilateBuffer2[gid + uint2(0, 1)];
         dilateShared[lid.x][10] = dilateBuffer2[gid + uint2(0, 2)];
+        if (lid.x == 9) {
+            dilateShared[11][11] = dilateBuffer2[gid + uint2(2, 2)];
+            dilateShared[11][10] = dilateBuffer2[gid + uint2(2, 1)];
+            dilateShared[10][11] = dilateBuffer2[gid + uint2(1, 2)];
+            dilateShared[10][10] = dilateBuffer2[gid + uint2(1, 1)];
+        }
     }
 
     GroupMemoryBarrierWithGroupSync();
 
-    hedefBuffer2[gid] = dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y] || dilateShared[lid.x + 1][lid.y] ||
-        dilateShared[lid.x][lid.y - 1] || dilateShared[lid.x][lid.y + 1] || dilateShared[lid.x - 1][lid.y - 1] ||
+    hedefBuffer2[gid] = dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y - 1] ||
         dilateShared[lid.x - 1][lid.y + 1] || dilateShared[lid.x + 1][lid.y - 1] || dilateShared[lid.x + 1][lid.y + 1] ||
-        dilateShared[lid.x - 2][lid.y] || dilateShared[lid.x + 2][lid.y] || dilateShared[lid.x][lid.y - 2] ||
-        dilateShared[lid.x][lid.y + 2];
+        dilateShared[lid.x - 2][lid.y] || dilateShared[lid.x + 2][lid.y] ||
+        dilateShared[lid.x][lid.y - 2] || dilateShared[lid.x][lid.y + 2] ||
+        dilateShared[lid.x - 2][lid.y - 2] || dilateShared[lid.x + 2][lid.y - 2] || dilateShared[lid.x + 2][lid.y + 2] ||
+        dilateShared[lid.x - 2][lid.y + 2];
 }
 
 
@@ -168,27 +222,54 @@ void erodeKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupT
     if (lid.x == 2) {
         dilateShared[0][lid.y] = !dilateBuffer[gid + uint2(-2, 0)];
         dilateShared[1][lid.y] = !dilateBuffer[gid + uint2(-1, 0)];
+        if (lid.y == 2) {
+            dilateShared[0][0] = !dilateBuffer[gid + uint2(-2, -2)];
+            dilateShared[1][1] = !dilateBuffer[gid + uint2(-1, -1)];
+            dilateShared[1][0] = !dilateBuffer[gid + uint2(-1, -2)];
+            dilateShared[0][1] = !dilateBuffer[gid + uint2(-2, -1)];
+        }
+        else if (lid.y == 9)
+        {
+            dilateShared[0][11] = !dilateBuffer[gid + uint2(-2, 2)];
+            dilateShared[0][10] = !dilateBuffer[gid + uint2(-2, 1)];
+            dilateShared[1][11] = !dilateBuffer[gid + uint2(-1, 2)];
+            dilateShared[1][10] = !dilateBuffer[gid + uint2(-1, -1)];
+        }
     }
     else if (lid.x == 9) {
         dilateShared[11][lid.y] = !dilateBuffer[gid + uint2(1, 0)];
         dilateShared[10][lid.y] = !dilateBuffer[gid + uint2(2, 0)];
+        if (lid.y == 2) {
+            dilateShared[11][0] = !dilateBuffer[gid + uint2(2, -2)];
+            dilateShared[11][1] = !dilateBuffer[gid + uint2(2, -1)];
+            dilateShared[10][0] = !dilateBuffer[gid + uint2(1, -2)];
+            dilateShared[10][1] = !dilateBuffer[gid + uint2(1, -1)];
+        }
     }
     if (lid.y == 2) {
         dilateShared[lid.x][0] = !dilateBuffer[gid + uint2(0, -2)];
         dilateShared[lid.x][1] = !dilateBuffer[gid + uint2(0, -1)];
+
     }
     else if (lid.y == 9) {
         dilateShared[lid.x][11] = !dilateBuffer[gid + uint2(0, 1)];
         dilateShared[lid.x][10] = !dilateBuffer[gid + uint2(0, 2)];
+        if (lid.x == 9) {
+            dilateShared[11][11] = !dilateBuffer[gid + uint2(2, 2)];
+            dilateShared[11][10] = !dilateBuffer[gid + uint2(2, 1)];
+            dilateShared[10][11] = !dilateBuffer[gid + uint2(1, 2)];
+            dilateShared[10][10] = !dilateBuffer[gid + uint2(1, 1)];
+        }
     }
 
     GroupMemoryBarrierWithGroupSync();
 
-    hedefBuffer[gid] = !(dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y] || dilateShared[lid.x + 1][lid.y] ||
-        dilateShared[lid.x][lid.y - 1] || dilateShared[lid.x][lid.y + 1] || dilateShared[lid.x - 1][lid.y - 1] ||
+    hedefBuffer[gid] = !(dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y - 1] ||
         dilateShared[lid.x - 1][lid.y + 1] || dilateShared[lid.x + 1][lid.y - 1] || dilateShared[lid.x + 1][lid.y + 1] ||
-        dilateShared[lid.x - 2][lid.y] || dilateShared[lid.x + 2][lid.y] || dilateShared[lid.x][lid.y - 2] ||
-        dilateShared[lid.x][lid.y + 2]);
+        dilateShared[lid.x - 2][lid.y] || dilateShared[lid.x + 2][lid.y] ||
+        dilateShared[lid.x][lid.y - 2] || dilateShared[lid.x][lid.y + 2] ||
+        dilateShared[lid.x - 2][lid.y - 2] || dilateShared[lid.x + 2][lid.y - 2] || dilateShared[lid.x + 2][lid.y + 2] ||
+        dilateShared[lid.x - 2][lid.y + 2]);
 }
 
 
@@ -203,27 +284,54 @@ void erodeKernel2(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_Group
     if (lid.x == 2) {
         dilateShared[0][lid.y] = !dilateBuffer2[gid + uint2(-2, 0)];
         dilateShared[1][lid.y] = !dilateBuffer2[gid + uint2(-1, 0)];
+        if (lid.y == 2) {
+            dilateShared[0][0] = !dilateBuffer2[gid + uint2(-2, -2)];
+            dilateShared[1][1] = !dilateBuffer2[gid + uint2(-1, -1)];
+            dilateShared[1][0] = !dilateBuffer2[gid + uint2(-1, -2)];
+            dilateShared[0][1] = !dilateBuffer2[gid + uint2(-2, -1)];
+        }
+        else if (lid.y == 9)
+        {
+            dilateShared[0][11] = !dilateBuffer2[gid + uint2(-2, 2)];
+            dilateShared[0][10] = !dilateBuffer2[gid + uint2(-2, 1)];
+            dilateShared[1][11] = !dilateBuffer2[gid + uint2(-1, 2)];
+            dilateShared[1][10] = !dilateBuffer2[gid + uint2(-1, -1)];
+        }
     }
     else if (lid.x == 9) {
         dilateShared[11][lid.y] = !dilateBuffer2[gid + uint2(1, 0)];
         dilateShared[10][lid.y] = !dilateBuffer2[gid + uint2(2, 0)];
+        if (lid.y == 2) {
+            dilateShared[11][0] = !dilateBuffer2[gid + uint2(2, -2)];
+            dilateShared[11][1] = !dilateBuffer2[gid + uint2(2, -1)];
+            dilateShared[10][0] = !dilateBuffer2[gid + uint2(1, -2)];
+            dilateShared[10][1] = !dilateBuffer2[gid + uint2(1, -1)];
+        }
     }
     if (lid.y == 2) {
         dilateShared[lid.x][0] = !dilateBuffer2[gid + uint2(0, -2)];
         dilateShared[lid.x][1] = !dilateBuffer2[gid + uint2(0, -1)];
+
     }
     else if (lid.y == 9) {
         dilateShared[lid.x][11] = !dilateBuffer2[gid + uint2(0, 1)];
         dilateShared[lid.x][10] = !dilateBuffer2[gid + uint2(0, 2)];
+        if (lid.x == 9) {
+            dilateShared[11][11] = !dilateBuffer2[gid + uint2(2, 2)];
+            dilateShared[11][10] = !dilateBuffer2[gid + uint2(2, 1)];
+            dilateShared[10][11] = !dilateBuffer2[gid + uint2(1, 2)];
+            dilateShared[10][10] = !dilateBuffer2[gid + uint2(1, 1)];
+        }
     }
 
     GroupMemoryBarrierWithGroupSync();
-
-    hedefBuffer2[gid] = !(dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y] || dilateShared[lid.x + 1][lid.y] ||
-        dilateShared[lid.x][lid.y - 1] || dilateShared[lid.x][lid.y + 1] || dilateShared[lid.x - 1][lid.y - 1] ||
+	
+    hedefBuffer2[gid] = !(dilateShared[lid.x][lid.y] || dilateShared[lid.x - 1][lid.y - 1] ||
         dilateShared[lid.x - 1][lid.y + 1] || dilateShared[lid.x + 1][lid.y - 1] || dilateShared[lid.x + 1][lid.y + 1] ||
-        dilateShared[lid.x - 2][lid.y] || dilateShared[lid.x + 2][lid.y] || dilateShared[lid.x][lid.y - 2] ||
-        dilateShared[lid.x][lid.y + 2]);
+        dilateShared[lid.x - 2][lid.y] || dilateShared[lid.x + 2][lid.y] ||
+        dilateShared[lid.x][lid.y - 2] || dilateShared[lid.x][lid.y + 2] ||
+        dilateShared[lid.x - 2][lid.y - 2] || dilateShared[lid.x + 2][lid.y - 2] || dilateShared[lid.x + 2][lid.y + 2] ||
+        dilateShared[lid.x - 2][lid.y + 2]);
 }
 
 
